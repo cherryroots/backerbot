@@ -16,11 +16,11 @@ type backer struct {
 
 func parse(csvString string) error {
 	// delete file before we start
-	err := os.Remove("/home/bot/bots/go/backerbot/backers.db")
+	err := os.Remove("backers.db")
 	if err != nil {
 		return err
 	}
-	store, err := skv.Open("/home/bot/bots/go/backerbot/backers.db")
+	store, err := skv.Open("backers.db")
 	if err != nil {
 		return err
 	}

@@ -105,14 +105,14 @@ var (
 		},
 		"get": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
-			backerstore, err := skv.Open("/home/bot/bots/go/backerbot/backers.db")
+			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)
 				return
 			}
 			defer backerstore.Close()
-			linkstore, err := skv.Open("/home/bot/bots/go/backerbot/backerlinks.db")
+			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)
@@ -147,7 +147,7 @@ var (
 		},
 		"claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Member.User.Username)
-			linkstore, err := skv.Open("/home/bot/bots/go/backerbot/backerlinks.db")
+			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)
@@ -155,7 +155,7 @@ var (
 			}
 			defer linkstore.Close()
 
-			backerstore, err := skv.Open("/home/bot/bots/go/backerbot/backers.db")
+			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)
@@ -224,7 +224,7 @@ var (
 		},
 		"reclaim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Member.User.Username)
-			backerstore, err := skv.Open("/home/bot/bots/go/backerbot/backers.db")
+			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)
@@ -232,7 +232,7 @@ var (
 			}
 			defer backerstore.Close()
 
-			linkstore, err := skv.Open("/home/bot/bots/go/backerbot/backerlinks.db")
+			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)
