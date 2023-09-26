@@ -17,8 +17,7 @@ The bot requires
 - `bot` and `application.commands` scope
 - At least `Manage Roles`,  `Read Messages/View Channels`, `Send messages`, `Read Message History` and `Use Slash Commands` permissions
 
-The bot doesn't have configurable roles yet, they can be changed in the `utility.go` file
-First field is just for readability, second field is the role id and the third field is what's in the tier field in the csv.
+The bot also needs a role set with the tier as `Default` that it'll give anyone who claims
 
 Basic setup of the csv currently is
 |id |email          |tier  |

@@ -13,7 +13,7 @@ import (
 func init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 }
 
@@ -52,7 +52,6 @@ func main() {
 		log.Printf("Created '%s' command", cmd.Name)
 	}
 
-	log.Printf("%s is awaiting commands...", dg.State.User.Username)
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc

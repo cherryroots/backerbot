@@ -30,6 +30,49 @@ var (
 			},
 		},
 		{
+			Name:                     "addrole",
+			Description:              "Maps a role to a tier",
+			DefaultMemberPermissions: &adminCommandPermission,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "name",
+					Description: "The name of the role",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "id",
+					Description: "The id of the role",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "tier",
+					Description: "The tier to map to",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:                     "removerole",
+			Description:              "Maps a role to a tier",
+			DefaultMemberPermissions: &adminCommandPermission,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "id",
+					Description: "The id of the role",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:                     "listroles",
+			Description:              "Lists all roles",
+			DefaultMemberPermissions: &adminCommandPermission,
+		},
+		{
 			Name:                     "get",
 			Description:              "Get a backer",
 			DefaultMemberPermissions: &adminCommandPermission,
@@ -95,8 +138,8 @@ var (
 			err = parse(string(body))
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			log.Print("Done")
@@ -104,21 +147,102 @@ var (
 			response := "Done"
 			respond(s, i, response)
 		},
+		"addrole": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			rolestore, err := skv.Open("roles.db")
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+			defer rolestore.Close()
+
+			roleName := i.ApplicationCommandData().Options[0].Value.(string)
+			roleID := i.ApplicationCommandData().Options[1].Value.(string)
+			roleTier := i.ApplicationCommandData().Options[2].Value.(string)
+
+			var newrole role = role{
+				RoleName: roleName,
+				RoleId:   roleID,
+				Tier:     roleTier,
+			}
+
+			err = rolestore.Put(newrole.RoleId, newrole)
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+			response := "Added role " + roleName
+			respond(s, i, response)
+
+		},
+		"removerole": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			rolestore, err := skv.Open("roles.db")
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+			defer rolestore.Close()
+
+			roleID := i.ApplicationCommandData().Options[0].Value.(string)
+			err = rolestore.Delete(roleID)
+			if err != nil {
+				response := "There's no role with that id"
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+			log.Print("Done")
+			response := "Done"
+			respond(s, i, response)
+
+		},
+		"listroles": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+
+			guild, err := s.Guild(i.GuildID)
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+
+			roles, err := getRoles(guild)
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+			var response string
+			for _, role := range roles {
+				response += "**Role Name**: " + role.RoleName + "\n**Role ID**: " + role.RoleId + "\n**Tier**: " + role.Tier + "\n\n"
+			}
+			respond(s, i, response)
+
+		},
 		"get": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			defer backerstore.Close()
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			defer linkstore.Close()
@@ -128,8 +252,8 @@ var (
 			err = backerstore.Get(email, &b)
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			var userid string = "No link found"
@@ -139,8 +263,8 @@ var (
 				member, err := s.GuildMember(i.GuildID, userid)
 				if err != nil {
 					response := err.Error()
-					log.Fatal(response)
 					respond(s, i, response)
+					log.Print(response)
 					return
 				}
 				username = member.User.Username
@@ -155,8 +279,8 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			defer linkstore.Close()
@@ -164,8 +288,8 @@ var (
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			defer backerstore.Close()
@@ -180,8 +304,8 @@ var (
 			}
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			// check if email is already claimed
@@ -205,8 +329,8 @@ var (
 			err = giveBackerTier(s, i, "Default")
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 
@@ -214,16 +338,16 @@ var (
 			err = backerstore.Get(email, &b)
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			log.Println("Claiming tier role")
 			err = giveBackerTier(s, i, b.BackerTier)
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 
@@ -238,8 +362,8 @@ var (
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			defer backerstore.Close()
@@ -247,8 +371,8 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			defer linkstore.Close()
@@ -258,8 +382,8 @@ var (
 			err = linkstore.Get(i.Interaction.Member.User.ID, &email)
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 
@@ -268,8 +392,8 @@ var (
 			err = giveBackerTier(s, i, "Default")
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 
@@ -277,16 +401,16 @@ var (
 			err = backerstore.Get(email, &b)
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			log.Println("Claiming tier role")
 			err = giveBackerTier(s, i, b.BackerTier)
 			if err != nil {
 				response := err.Error()
-				log.Fatal(response)
 				respond(s, i, response)
+				log.Print(response)
 				return
 			}
 			log.Printf("Reclaimed rewards for %s", i.Member.User.Username)
