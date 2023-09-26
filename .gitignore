@@ -1,0 +1,5 @@
+*.csv
+*.db
+.env
+backerbot
+runner-build
