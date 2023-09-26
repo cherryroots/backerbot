@@ -42,7 +42,7 @@ func main() {
 	})
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
+			go h(s, i)
 		}
 	})
 

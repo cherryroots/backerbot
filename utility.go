@@ -11,9 +11,8 @@ type roles struct {
 }
 
 var rolesList = []roles{
-	{"Default", "1156325434351439912", "Default"},
-	{"Tier 1", "1156325466236526642", "Tier 1"},
-	{"Tier 2", "1156325506300530719", "Tier 2"},
+	{"Early Supporter", "1156325434351439912", "Default"},
+	{"Sub T3", "1156325466236526642", "Tier 1"},
 }
 
 // function to give backer tier to a discord user in a server
