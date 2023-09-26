@@ -34,12 +34,8 @@ func main() {
 		log.Panic("error opening connection,", err)
 		return
 	}
-
 	log.Println("Bot is now running. Press CTRL-C to exit.")
 
-	dg.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Println("Logged in as ", s.State.User.Username)
-	})
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
 			go h(s, i)
@@ -56,12 +52,11 @@ func main() {
 		log.Printf("Created '%s' command", cmd.Name)
 	}
 
-	defer dg.Close()
-	defer log.Println("Bot is shutting down.")
-
-	log.Println("Awaiting commands...")
+	log.Printf("%s is awaiting commands...", dg.State.User.Username)
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
+	defer dg.Close()
+	defer log.Print("Bot is shutting down.")
 }

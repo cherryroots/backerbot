@@ -95,6 +95,7 @@ var (
 			err = parse(string(body))
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -108,6 +109,7 @@ var (
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -115,6 +117,7 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -125,6 +128,7 @@ var (
 			err = backerstore.Get(email, &b)
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -135,13 +139,14 @@ var (
 				member, err := s.GuildMember(i.GuildID, userid)
 				if err != nil {
 					response := err.Error()
+					log.Fatal(response)
 					respond(s, i, response)
 					return
 				}
 				username = member.User.Username
 			}
 
-			response := "Email: " + email + "\nBacker Tier: " + b.BackerTier + "\nUser id: " + userid + "\nUsername: " + username
+			response := "**Email**: " + email + "\n**Backer Tier**: " + b.BackerTier + "\n**User id**: " + userid + "\n**Username**: " + username
 			respond(s, i, response)
 
 		},
@@ -150,6 +155,7 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -158,6 +164,7 @@ var (
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -173,6 +180,7 @@ var (
 			}
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -197,6 +205,7 @@ var (
 			err = giveBackerTier(s, i, "Default")
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -205,6 +214,7 @@ var (
 			err = backerstore.Get(email, &b)
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -212,6 +222,7 @@ var (
 			err = giveBackerTier(s, i, b.BackerTier)
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -227,6 +238,7 @@ var (
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -235,6 +247,7 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -245,6 +258,7 @@ var (
 			err = linkstore.Get(i.Interaction.Member.User.ID, &email)
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -254,6 +268,7 @@ var (
 			err = giveBackerTier(s, i, "Default")
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -262,6 +277,7 @@ var (
 			err = backerstore.Get(email, &b)
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
@@ -269,6 +285,7 @@ var (
 			err = giveBackerTier(s, i, b.BackerTier)
 			if err != nil {
 				response := err.Error()
+				log.Fatal(response)
 				respond(s, i, response)
 				return
 			}
