@@ -133,7 +133,7 @@ var (
 		},
 		"get": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
-			store, err := skv.Open("/home/bot/bots/go/backerbot/backers.db")
+			backerstore, err := skv.Open("/home/bot/bots/go/backerbot/backers.db")
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -144,11 +144,8 @@ var (
 				})
 				return
 			}
-			defer store.Close()
-
-			email := i.ApplicationCommandData().Options[0].Value.(string)
-			var b backer
-			err = store.Get(email, &b)
+			defer backerstore.Close()
+			linkstore, err := skv.Open("/home/bot/bots/go/backerbot/backerlinks.db")
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -158,12 +155,44 @@ var (
 					},
 				})
 				return
+			}
+			defer linkstore.Close()
+
+			email := i.ApplicationCommandData().Options[0].Value.(string)
+			var b backer
+			err = backerstore.Get(email, &b)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: err.Error(),
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				})
+				return
+			}
+			var userid string = "No link found"
+			var username string = "No link found"
+			err = linkstore.Get(b.Email, &userid)
+			if err == nil {
+				member, err := s.GuildMember(i.GuildID, userid)
+				if err != nil {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: err.Error(),
+							Flags:   discordgo.MessageFlagsEphemeral,
+						},
+					})
+					return
+				}
+				username = member.User.Username
 			}
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: b.Email + " " + b.BackerTier,
+					Content: "Email: " + email + "\nBacker Tier: " + b.BackerTier + "\nUser id: " + userid + "\nUsername: " + username,
 					Flags:   discordgo.MessageFlagsEphemeral,
 				},
 			})
@@ -291,7 +320,7 @@ var (
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Successfully claimed backer",
+					Content: "Successfully claimed backer roles",
 					Flags:   discordgo.MessageFlagsEphemeral,
 				},
 			})
