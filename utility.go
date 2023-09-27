@@ -13,11 +13,6 @@ type role struct {
 	Donation string
 }
 
-//var rolesList = []role{
-//	{"Early Supporter", "1156325434351439912", "Default"},
-//	{"Sub T3", "1156325466236526642", "Tier 1"},
-//}
-
 // function to give backer tier to a discord user in a server
 func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donation string) error {
 	guildid := i.GuildID
