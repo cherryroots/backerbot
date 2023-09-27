@@ -10,16 +10,14 @@ import (
 )
 
 type backer struct {
-	Email      string
-	BackerTier string
+	Email    string
+	Donation string
 }
 
 func parse(csvString string) error {
 	// delete file before we start
-	err := os.Remove("backers.db")
-	if err != nil {
-		return err
-	}
+	os.Remove("backers.db")
+
 	store, err := skv.Open("backers.db")
 	if err != nil {
 		return err
@@ -33,8 +31,8 @@ func parse(csvString string) error {
 
 	for _, record := range records {
 		b := backer{
-			Email:      record[1],
-			BackerTier: record[2],
+			Email:    record[1],
+			Donation: record[2],
 		}
 
 		err := store.Put(b.Email, b)

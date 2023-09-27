@@ -17,13 +17,13 @@ The bot requires
 - `bot` and `application.commands` scope
 - At least `Manage Roles`,  `Read Messages/View Channels`, `Send messages`, `Read Message History` and `Use Slash Commands` permissions
 
-The bot also needs a role set with the tier as `Default` that it'll give anyone who claims
+The bot will give every role up to their donation amount
 
 Basic setup of the csv currently is
-|id |email          |tier  |
-|---|---------------|------|
-|1  |test1@gmail.com|Tier 1|
-|2  |test2@gmail.com|Tier 2|
-|3  |test3@gmail.com|Tier 1|
-|4  |test4@gmail.com|Tier 2|
-|5  |test5@gmail.com|Tier 1|
+|id |email          |donation|
+|---|---------------|--------|
+|1  |test1@gmail.com|5       |
+|2  |test2@gmail.com|15      |
+|3  |test3@gmail.com|30      |
+|4  |test4@gmail.com|40      |
+|5  |test5@gmail.com|50      |

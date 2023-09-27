@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -48,15 +48,15 @@ var (
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "tier",
-					Description: "The tier to map to",
+					Name:        "donation",
+					Description: "At least this much donation",
 					Required:    true,
 				},
 			},
 		},
 		{
 			Name:                     "removerole",
-			Description:              "Maps a role to a tier",
+			Description:              "Removes a role from the database",
 			DefaultMemberPermissions: &adminCommandPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
@@ -128,7 +128,7 @@ var (
 			}
 			defer res.Body.Close()
 
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				response := "Could not read file"
 				respond(s, i, response)
@@ -160,12 +160,12 @@ var (
 
 			roleName := i.ApplicationCommandData().Options[0].Value.(string)
 			roleID := i.ApplicationCommandData().Options[1].Value.(string)
-			roleTier := i.ApplicationCommandData().Options[2].Value.(string)
+			roleDonation := i.ApplicationCommandData().Options[2].Value.(string)
 
 			var newrole role = role{
 				RoleName: roleName,
 				RoleId:   roleID,
-				Tier:     roleTier,
+				Donation: roleDonation,
 			}
 
 			err = rolestore.Put(newrole.RoleId, newrole)
@@ -223,7 +223,7 @@ var (
 			}
 			var response string
 			for _, role := range roles {
-				response += "**Role Name**: " + role.RoleName + "\n**Role ID**: " + role.RoleId + "\n**Tier**: " + role.Tier + "\n\n"
+				response += "**Role Name**: " + role.RoleName + "\n**Role ID**: " + role.RoleId + "\n**Donation**: " + role.Donation + "\n\n"
 			}
 			respond(s, i, response)
 
@@ -270,7 +270,7 @@ var (
 				username = member.User.Username
 			}
 
-			response := "**Email**: " + email + "\n**Backer Tier**: " + b.BackerTier + "\n**User id**: " + userid + "\n**Username**: " + username
+			response := "**Email**: " + email + "\n**Backer Donation**: " + b.Donation + "\n**User id**: " + userid + "\n**Username**: " + username
 			respond(s, i, response)
 
 		},
@@ -324,16 +324,6 @@ var (
 				return
 			}
 
-			// give roles
-			log.Print("Claiming default role")
-			err = giveBackerTier(s, i, "Default")
-			if err != nil {
-				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
-				return
-			}
-
 			var b backer
 			err = backerstore.Get(email, &b)
 			if err != nil {
@@ -342,8 +332,8 @@ var (
 				log.Print(response)
 				return
 			}
-			log.Println("Claiming tier role")
-			err = giveBackerTier(s, i, b.BackerTier)
+			log.Println("Claiming donation roles")
+			err = giveBackerRoles(s, i, b.Donation)
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)
@@ -387,16 +377,6 @@ var (
 				return
 			}
 
-			// give roles
-			log.Print("Claiming default role")
-			err = giveBackerTier(s, i, "Default")
-			if err != nil {
-				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
-				return
-			}
-
 			var b backer
 			err = backerstore.Get(email, &b)
 			if err != nil {
@@ -405,8 +385,8 @@ var (
 				log.Print(response)
 				return
 			}
-			log.Println("Claiming tier role")
-			err = giveBackerTier(s, i, b.BackerTier)
+			log.Println("Claiming donation roles")
+			err = giveBackerRoles(s, i, b.Donation)
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)

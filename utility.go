@@ -8,7 +8,7 @@ import (
 type role struct {
 	RoleName string
 	RoleId   string
-	Tier     string
+	Donation string
 }
 
 //var rolesList = []role{
@@ -17,7 +17,7 @@ type role struct {
 //}
 
 // function to give backer tier to a discord user in a server
-func giveBackerTier(s *discordgo.Session, i *discordgo.InteractionCreate, tier string) error {
+func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donation string) error {
 	guildid := i.GuildID
 	userid := i.Member.User.ID
 	// get guild
@@ -30,7 +30,7 @@ func giveBackerTier(s *discordgo.Session, i *discordgo.InteractionCreate, tier s
 		return err
 	}
 	for i, role := range rolesList {
-		if role.Tier == tier {
+		if donation >= role.Donation {
 			err := s.GuildMemberRoleAdd(guildid, userid, rolesList[i].RoleId)
 			if err != nil {
 				return err
