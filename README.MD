@@ -1,3 +1,5 @@
+## Kickstarter backer bot
+
 This project requires two external go modules
 
 discordgo
