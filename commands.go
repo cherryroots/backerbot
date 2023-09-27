@@ -112,6 +112,7 @@ var (
 				return
 			}
 
+			// download file
 			res, err := http.DefaultClient.Get(attachment.URL)
 			if err != nil {
 				response := "Could not download file"
@@ -127,6 +128,7 @@ var (
 				return
 			}
 
+			// parse csv and put it into the backers db
 			err = parse(string(body))
 			if err != nil {
 				response := err.Error()
@@ -156,11 +158,12 @@ var (
 
 			var newrole role = role{
 				RoleName: roleName,
-				RoleId:   roleID,
+				RoleID:   roleID,
 				Donation: roleDonation,
 			}
 
-			err = rolestore.Put(newrole.RoleId, newrole)
+			// Put a new role into the rolestore
+			err = rolestore.Put(newrole.RoleID, newrole)
 			if err != nil {
 				response := err.Error()
 				respond(s, i, response)
@@ -215,7 +218,7 @@ var (
 			}
 			var response string
 			for _, role := range roles {
-				response += "**Role Name**: " + role.RoleName + "\n**Role ID**: " + role.RoleId + "\n**Donation**: " + role.Donation + "\n\n"
+				response += "**Role Name**: " + role.RoleName + "\n**Role ID**: " + role.RoleID + "\n**Donation**: " + role.Donation + "\n\n"
 			}
 			respond(s, i, response)
 
@@ -268,6 +271,7 @@ var (
 		},
 		"claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			// Open modal and which will run "modal_claim" afterwards
 			sendModal(s, i)
 		},
 		"modal_claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -292,7 +296,7 @@ var (
 
 			email := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
 
-			// check if email exists in backerstore
+			// Check if email exists
 			err = backerstore.Get(email, nil)
 			if err == skv.ErrNotFound {
 				response := "Email does not exist"
@@ -305,14 +309,16 @@ var (
 				log.Print(response)
 				return
 			}
-			// check if email is already claimed
+
+			// Check if the email has already been claimed
 			err = linkstore.Get(email, nil)
 			if err == nil {
 				response := "Rewards have already been claimed for this email"
 				respond(s, i, response)
 				return
 			}
-			// check if the user has already claimed
+
+			// Check if the user has already claimed
 			var linkemail string
 			err = linkstore.Get(i.Member.User.ID, &linkemail)
 			if err == nil {
@@ -321,6 +327,7 @@ var (
 				return
 			}
 
+			// Claim rewards
 			var b backer
 			err = backerstore.Get(email, &b)
 			if err != nil {
@@ -364,16 +371,17 @@ var (
 			}
 			defer linkstore.Close()
 
-			// check if you're already linked
+			// Get email from user id
 			var email string
 			err = linkstore.Get(i.Interaction.Member.User.ID, &email)
 			if err != nil {
-				response := err.Error()
+				response := "You haven't claimed your rewards yet"
 				respond(s, i, response)
 				log.Print(response)
 				return
 			}
 
+			// Reclaim rewards
 			var b backer
 			err = backerstore.Get(email, &b)
 			if err != nil {

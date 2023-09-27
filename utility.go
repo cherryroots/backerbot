@@ -9,15 +9,14 @@ import (
 
 type role struct {
 	RoleName string
-	RoleId   string
+	RoleID   string
 	Donation string
 }
 
-// function to give backer tier to a discord user in a server
 func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donation string) error {
 	guildid := i.GuildID
 	userid := i.Member.User.ID
-	// get guild
+
 	guild, err := s.Guild(guildid)
 	if err != nil {
 		return err
@@ -26,9 +25,9 @@ func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donat
 	if err != nil {
 		return err
 	}
-	for i, role := range rolesList {
+	for _, role := range rolesList {
 		if donation >= role.Donation {
-			err := s.GuildMemberRoleAdd(guildid, userid, rolesList[i].RoleId)
+			err := s.GuildMemberRoleAdd(guildid, userid, role.RoleID)
 			if err != nil {
 				return err
 			}

@@ -15,7 +15,6 @@ type backer struct {
 }
 
 func parse(csvString string) error {
-	// delete file before we start
 	os.Remove("backers.db")
 
 	store, err := skv.Open("backers.db")
@@ -44,10 +43,9 @@ func parse(csvString string) error {
 }
 
 func readData(csvString string) ([][]string, error) {
-
 	r := csv.NewReader(strings.NewReader(csvString))
 
-	// skip header
+	// skip header of the csv
 	if _, err := r.Read(); err != nil {
 		return [][]string{}, err
 	}
