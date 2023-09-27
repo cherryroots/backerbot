@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -37,8 +38,16 @@ func main() {
 	log.Println("Bot is now running. Press CTRL-C to exit.")
 
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			go h(s, i)
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+				go h(s, i)
+			}
+		case discordgo.InteractionModalSubmit:
+			prefix := strings.Split(i.ModalSubmitData().CustomID, "-")
+			if h, ok := commandHandlers[prefix[0]]; ok {
+				go h(s, i)
+			}
 		}
 	})
 

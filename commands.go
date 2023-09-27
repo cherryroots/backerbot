@@ -90,14 +90,6 @@ var (
 			Description:              "Claim your rewards",
 			DefaultMemberPermissions: &writePermission,
 			DMPermission:             &dmPermission,
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "email",
-					Description: "Your kickstarter email",
-					Required:    true,
-				},
-			},
 		},
 		{
 			Name:                     "reclaim",
@@ -275,7 +267,11 @@ var (
 
 		},
 		"claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Member.User.Username)
+			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			sendModal(s, i)
+		},
+		"modal_claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s by %s", i.ModalSubmitData().CustomID, i.Member.User.Username)
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
@@ -294,7 +290,8 @@ var (
 			}
 			defer backerstore.Close()
 
-			email := i.ApplicationCommandData().Options[0].Value.(string)
+			email := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
+
 			// check if email exists in backerstore
 			err = backerstore.Get(email, nil)
 			if err == skv.ErrNotFound {

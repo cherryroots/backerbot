@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/rapidloop/skv"
 )
@@ -66,4 +68,32 @@ func respond(s *discordgo.Session, i *discordgo.InteractionCreate, content strin
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
+}
+
+func sendModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseModal,
+		Data: &discordgo.InteractionResponseData{
+			CustomID: "modal_claim-" + i.Interaction.Member.User.ID,
+			Title:    "Claim rewards!",
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.TextInput{
+							CustomID:    "email",
+							Label:       "Kickstarter email",
+							Style:       discordgo.TextInputParagraph,
+							Placeholder: "Please provide the same email used in your kickstarter account...",
+							Required:    true,
+							MaxLength:   100,
+							MinLength:   5,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Print(err)
+	}
 }
