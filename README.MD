@@ -4,12 +4,17 @@ This project requires two external go modules
 
 discordgo
 ```sh
-go get github.com/bwmarrin/discordgo
+go get -u github.com/bwmarrin/discordgo
+```
+
+gjson
+```sh
+go get -u github.com/tidwall/gjson
 ```
 
 skv
 ```sh
-go get github.com/rapidloop/skv
+go get -u github.com/rapidloop/skv
 ```
 
 Rename the `sample.env` file to `.env` then populate the token field with your discord bot token.
