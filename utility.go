@@ -14,10 +14,10 @@ type role struct {
 }
 
 func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donation string) error {
-	guildid := i.GuildID
-	userid := i.Member.User.ID
+	guildID := i.GuildID
+	userID := i.Member.User.ID
 
-	guild, err := s.Guild(guildid)
+	guild, err := s.Guild(guildID)
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donat
 	}
 	for _, role := range rolesList {
 		if donation >= role.Donation {
-			err := s.GuildMemberRoleAdd(guildid, userid, role.RoleID)
+			err := s.GuildMemberRoleAdd(guildID, userID, role.RoleID)
 			if err != nil {
 				return err
 			}

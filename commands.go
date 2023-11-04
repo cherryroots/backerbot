@@ -282,11 +282,11 @@ var (
 				log.Print(response)
 				return
 			}
-			var userid string = "No link found"
+			var userID string = "No link found"
 			var username string = "No link found"
-			err = linkstore.Get(b.Email, &userid)
+			err = linkstore.Get(b.Email, &userID)
 			if err == nil {
-				member, err := s.GuildMember(i.GuildID, userid)
+				member, err := s.GuildMember(i.GuildID, userID)
 				if err != nil {
 					response := err.Error()
 					respond(s, i, response)
@@ -296,7 +296,7 @@ var (
 				username = member.User.Username
 			}
 
-			response := "**Email**: " + email + "\n**Backer Donation**: " + b.Donation + "\n**User id**: " + userid + "\n**Username**: " + username
+			response := "**Email**: " + email + "\n**Backer Donation**: " + b.Donation + "\n**User id**: " + userID + "\n**Username**: " + username
 			respond(s, i, response)
 
 		},
