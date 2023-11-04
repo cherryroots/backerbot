@@ -48,6 +48,10 @@ func main() {
 			if h, ok := commandHandlers[prefix[0]]; ok {
 				go h(s, i)
 			}
+		case discordgo.InteractionMessageComponent:
+			if h, ok := commandHandlers[i.MessageComponentData().CustomID]; ok {
+				go h(s, i)
+			}
 		}
 	})
 

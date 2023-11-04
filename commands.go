@@ -86,6 +86,37 @@ var (
 			},
 		},
 		{
+			Name:                     "button",
+			Description:              "Create a button to claim rewards",
+			DefaultMemberPermissions: &adminCommandPermission,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "title",
+					Description: "Title of the post",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "description",
+					Description: "description of the post",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "buttontext",
+					Description: "Text of the button",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "emojiid",
+					Description: "Emoji id of the button, get it by adding a backslash before the emoji in discord",
+					Required:    true,
+				},
+			},
+		},
+		{
 			Name:                     "claim",
 			Description:              "Claim your rewards",
 			DefaultMemberPermissions: &writePermission,
@@ -269,8 +300,22 @@ var (
 			respond(s, i, response)
 
 		},
+		"button": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			title := i.ApplicationCommandData().Options[0].Value.(string)
+			description := i.ApplicationCommandData().Options[1].Value.(string)
+			buttontext := i.ApplicationCommandData().Options[2].Value.(string)
+			emijiid := i.ApplicationCommandData().Options[3].Value.(string)
+
+			sendClaimButton(s, i, title, description, buttontext, emijiid)
+		},
 		"claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			// Open modal and which will run "modal_claim" afterwards
+			sendModal(s, i)
+		},
+		"claim_button": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s", i.MessageComponentData().CustomID)
 			// Open modal and which will run "modal_claim" afterwards
 			sendModal(s, i)
 		},

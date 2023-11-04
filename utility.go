@@ -91,3 +91,36 @@ func sendModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Print(err)
 	}
 }
+
+func sendClaimButton(s *discordgo.Session, i *discordgo.InteractionCreate, title string, description string, buttontext string, emojiid string) {
+	embed := discordgo.MessageEmbed{
+		Author:      &discordgo.MessageEmbedAuthor{},
+		Color:       0x00ff00,
+		Title:       title,
+		Description: description,
+		Footer:      &discordgo.MessageEmbedFooter{Text: "Made with ❤️ by @cherrywoods", IconURL: s.State.User.AvatarURL("512x512")},
+	}
+	button := discordgo.Button{
+		Label:    buttontext,
+		Emoji:    discordgo.ComponentEmoji{ID: emojiid},
+		Style:    discordgo.PrimaryButton,
+		CustomID: "claim_button",
+	}
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{&embed},
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						button,
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Print(err)
+	}
+}
