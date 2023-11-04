@@ -112,7 +112,7 @@ var (
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "emojiid",
 					Description: "Emoji id of the button, get it by adding a backslash before the emoji in discord",
-					Required:    true,
+					Required:    false,
 				},
 			},
 		},
@@ -302,10 +302,26 @@ var (
 		},
 		"button": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
-			title := i.ApplicationCommandData().Options[0].Value.(string)
-			description := i.ApplicationCommandData().Options[1].Value.(string)
-			buttontext := i.ApplicationCommandData().Options[2].Value.(string)
-			emijiid := i.ApplicationCommandData().Options[3].Value.(string)
+			var title, description, buttontext, emijiid string = "", "", "", ""
+			for _, option := range i.ApplicationCommandData().Options {
+				switch option.Name {
+				case "title":
+					title = option.Value.(string)
+				}
+				switch option.Name {
+				case "description":
+					description = option.Value.(string)
+				}
+				switch option.Name {
+				case "buttontext":
+					buttontext = option.Value.(string)
+				}
+				switch option.Name {
+				case "emojiid":
+					emijiid = option.Value.(string)
+				}
+
+			}
 
 			sendClaimButton(s, i, title, description, buttontext, emijiid)
 		},
