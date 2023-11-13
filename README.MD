@@ -1,6 +1,9 @@
 ## Kickstarter backer bot
 Rename the `sample.env` file to `.env` then populate the token field with your discord bot token.
 
+A local copy of SKV is used to add a list function to it
+https://github.com/rapidloop/skv
+
 The bot requires
 - All the intents set
 - `bot` and `application.commands` scope
