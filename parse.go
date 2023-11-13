@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/rapidloop/skv"
@@ -11,7 +12,8 @@ import (
 
 type backer struct {
 	Email    string
-	Donation string
+	Donation float64
+	Status   string
 }
 
 func parse(csvString string) error {
@@ -30,8 +32,9 @@ func parse(csvString string) error {
 
 	for _, record := range records {
 		b := backer{
-			Email:    record[1],
-			Donation: record[2],
+			Email:    record[0],
+			Donation: cleanDonation(record[1]),
+			Status:   record[2],
 		}
 
 		err := store.Put(b.Email, b)
@@ -40,6 +43,22 @@ func parse(csvString string) error {
 		}
 	}
 	return nil
+}
+
+func cleanDonation(donation string) float64 {
+	// remove euro symbol at the start of the string
+	donation = donation[3:]
+
+	// remove comma
+	donation = strings.ReplaceAll(donation, ",", "")
+
+	// convert string to float
+	donationFloat, err := strconv.ParseFloat(donation, 64)
+	if err != nil {
+		return 0
+	}
+
+	return donationFloat
 }
 
 func readData(csvString string) ([][]string, error) {

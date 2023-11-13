@@ -8,12 +8,11 @@ import (
 )
 
 type role struct {
-	RoleName string
 	RoleID   string
-	Donation string
+	Donation float64
 }
 
-func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donation string) error {
+func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donation float64) error {
 	guildID := i.GuildID
 	userID := i.Member.User.ID
 
@@ -36,6 +35,19 @@ func giveBackerRoles(s *discordgo.Session, i *discordgo.InteractionCreate, donat
 	return nil
 }
 
+func getRoleName(s *discordgo.Session, guildID string, roleID string) (string, error) {
+	guild, err := s.Guild(guildID)
+	if err != nil {
+		return "", err
+	}
+	for _, guildRole := range guild.Roles {
+		if guildRole.ID == roleID {
+			return guildRole.Name, nil
+		}
+	}
+	return "", nil
+}
+
 func getRoles(guild *discordgo.Guild) ([]role, error) {
 	rolestore, err := skv.Open("roles.db")
 	if err != nil {
@@ -45,8 +57,8 @@ func getRoles(guild *discordgo.Guild) ([]role, error) {
 
 	var rolesList = []role{}
 	var newrole role
-	for _, grole := range guild.Roles {
-		err := rolestore.Get(grole.ID, &newrole)
+	for _, guildRole := range guild.Roles {
+		err := rolestore.Get(guildRole.ID, &newrole)
 		if err == nil {
 			rolesList = append(rolesList, newrole)
 		}
@@ -104,7 +116,7 @@ func sendClaimButton(s *discordgo.Session, i *discordgo.InteractionCreate, title
 		Label:    buttontext,
 		Emoji:    discordgo.ComponentEmoji{ID: emojiid},
 		Style:    discordgo.PrimaryButton,
-		CustomID: "claim_button",
+		CustomID: "button_claim",
 	}
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

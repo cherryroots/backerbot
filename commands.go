@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -35,21 +36,15 @@ var (
 			DefaultMemberPermissions: &adminCommandPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "name",
-					Description: "The name of the role",
+					Type:        discordgo.ApplicationCommandOptionRole,
+					Name:        "role",
+					Description: "The guild role to map",
 					Required:    true,
 				},
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "id",
-					Description: "The id of the role",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
+					Type:        discordgo.ApplicationCommandOptionNumber,
 					Name:        "donation",
-					Description: "At least this much donation",
+					Description: "At least this much to get the role",
 					Required:    true,
 				},
 			},
@@ -73,8 +68,34 @@ var (
 			DefaultMemberPermissions: &adminCommandPermission,
 		},
 		{
-			Name:                     "get",
+			Name:                     "get-email",
 			Description:              "Get a backer",
+			DefaultMemberPermissions: &adminCommandPermission,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "email",
+					Description: "The email of the backer",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:                     "get-userid",
+			Description:              "Get a backer",
+			DefaultMemberPermissions: &adminCommandPermission,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user",
+					Description: "The user to look up",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:                     "unlink",
+			Description:              "Unlink a backer from a role and remove roles",
 			DefaultMemberPermissions: &adminCommandPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
@@ -183,13 +204,11 @@ var (
 			}
 			defer rolestore.Close()
 
-			roleName := i.ApplicationCommandData().Options[0].Value.(string)
-			roleID := i.ApplicationCommandData().Options[1].Value.(string)
-			roleDonation := i.ApplicationCommandData().Options[2].Value.(string)
+			discordRole := i.ApplicationCommandData().Options[0].Value.(string)
+			roleDonation := i.ApplicationCommandData().Options[1].Value.(float64)
 
 			var newrole role = role{
-				RoleName: roleName,
-				RoleID:   roleID,
+				RoleID:   discordRole,
 				Donation: roleDonation,
 			}
 
@@ -201,6 +220,8 @@ var (
 				log.Print(response)
 				return
 			}
+
+			roleName, _ := getRoleName(s, i.GuildID, discordRole)
 			response := "Added role " + roleName
 			respond(s, i, response)
 
@@ -249,12 +270,16 @@ var (
 			}
 			var response string
 			for _, role := range roles {
-				response += "**Role Name**: " + role.RoleName + "\n**Role ID**: " + role.RoleID + "\n**Donation**: " + role.Donation + "\n\n"
+				roleName, _ := getRoleName(s, i.GuildID, role.RoleID)
+				response += "**Role Name**: " + roleName + "\n**Role ID**: " + role.RoleID + "\n**Donation**: " + fmt.Sprintf("%.2f", role.Donation) + "\n\n"
+			}
+			if response == "" {
+				response = "No roles have been added"
 			}
 			respond(s, i, response)
 
 		},
-		"get": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		"get-email": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
@@ -277,7 +302,7 @@ var (
 			var b backer
 			err = backerstore.Get(email, &b)
 			if err != nil {
-				response := err.Error()
+				response := "No backer found with that email"
 				respond(s, i, response)
 				log.Print(response)
 				return
@@ -296,9 +321,103 @@ var (
 				username = member.User.Username
 			}
 
-			response := "**Email**: " + email + "\n**Backer Donation**: " + b.Donation + "\n**User id**: " + userID + "\n**Username**: " + username
+			response := "**Email**: " + email + "\n**Backer Donation**: " + fmt.Sprintf("%.2f", b.Donation) + "\n**Status**: " + b.Status + "\n**User id**: " + userID + "\n**Username**: " + username
 			respond(s, i, response)
 
+		},
+		"get-userid": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			linkstore, err := skv.Open("backerlinks.db")
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+			defer linkstore.Close()
+
+			userID := i.ApplicationCommandData().Options[0].Value.(string)
+
+			var email string = ""
+			err = linkstore.Get(userID, &email)
+			if err != nil {
+				response := "This user hasn't linked to an email"
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+
+			response := "**Email**: " + email
+
+			respond(s, i, response)
+		},
+		"unlink": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			linkstore, err := skv.Open("backerlinks.db")
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+			defer linkstore.Close()
+
+			email := i.ApplicationCommandData().Options[0].Value.(string)
+
+			var userID string = ""
+			err = linkstore.Get(email, &userID)
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+
+			err = linkstore.Delete(email)
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+
+			err = linkstore.Delete(userID)
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+
+			// get roles and delete them from the unlinked user
+			guild, err := s.Guild(i.GuildID)
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+
+			roles, err := getRoles(guild)
+			if err != nil {
+				response := err.Error()
+				respond(s, i, response)
+				log.Print(response)
+				return
+			}
+
+			for _, role := range roles {
+				err = s.GuildMemberRoleRemove(i.GuildID, userID, role.RoleID)
+				if err != nil {
+					response := err.Error()
+					respond(s, i, response)
+					log.Print(response)
+					return
+				}
+			}
+
+			response := "Done"
+			respond(s, i, response)
 		},
 		"button": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
@@ -330,7 +449,7 @@ var (
 			// Open modal and which will run "modal_claim" afterwards
 			sendModal(s, i)
 		},
-		"claim_button": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		"button_claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.MessageComponentData().CustomID)
 			// Open modal and which will run "modal_claim" afterwards
 			sendModal(s, i)
@@ -357,8 +476,9 @@ var (
 
 			email := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
 
-			// Check if email exists
-			err = backerstore.Get(email, nil)
+			// Check if email exists and get backer
+			var b backer
+			err = backerstore.Get(email, &b)
 			if err == skv.ErrNotFound {
 				response := "Email does not exist"
 				respond(s, i, response)
@@ -368,6 +488,12 @@ var (
 				response := err.Error()
 				respond(s, i, response)
 				log.Print(response)
+				return
+			}
+
+			if b.Status != "collected" {
+				response := "Your kickstarter payment has not been received yet"
+				respond(s, i, response)
 				return
 			}
 
@@ -388,15 +514,7 @@ var (
 				return
 			}
 
-			// Claim rewards
-			var b backer
-			err = backerstore.Get(email, &b)
-			if err != nil {
-				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
-				return
-			}
+			// claim rewards
 			log.Println("Claiming donation roles")
 			err = giveBackerRoles(s, i, b.Donation)
 			if err != nil {
