@@ -8,7 +8,11 @@ The bot requires
 
 The bot will give every role up to their donation amount
 
-Basic setup of the csv currently is
+Basic setup of the csv currently is as follows
+The pledge is cleaned up
+€100.00 -> 100.00
+$1,000.00 -> 1000.00
+
 | Email            | Pledge Amount | Pledge Status |
 |------------------|---------------|---------------|
 | email1@gmail.com | €100.0        | collected     |

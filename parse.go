@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -46,11 +47,10 @@ func parse(csvString string) error {
 }
 
 func cleanDonation(donation string) float64 {
-	// remove euro symbol at the start of the string
-	donation = donation[3:]
+	// regex [^\d.]+
+	var re = regexp.MustCompile(`[^\d.]+`)
 
-	// remove comma
-	donation = strings.ReplaceAll(donation, ",", "")
+	donation = re.ReplaceAllString(donation, "")
 
 	// convert string to float
 	donationFloat, err := strconv.ParseFloat(donation, 64)
