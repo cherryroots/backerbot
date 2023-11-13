@@ -87,7 +87,7 @@ var (
 			},
 		},
 		{
-			Name:                     "get-userid",
+			Name:                     "get-user",
 			Description:              "Get a backer",
 			DefaultMemberPermissions: &adminCommandPermission,
 			DMPermission:             &dmPermission,
@@ -99,6 +99,12 @@ var (
 					Required:    true,
 				},
 			},
+		},
+		{
+			Name:                     "get-backer-info",
+			Type:                     discordgo.UserApplicationCommand,
+			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 		},
 		{
 			Name:                     "unlink",
@@ -329,7 +335,7 @@ var (
 			respond(s, i, response)
 
 		},
-		"get-userid": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		"get-user": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
@@ -348,6 +354,46 @@ var (
 			defer backerstore.Close()
 
 			userID := i.ApplicationCommandData().Options[0].Value.(string)
+
+			var email string = ""
+			err = linkstore.Get(userID, &email)
+			if err != nil {
+				response := "This user hasn't linked to an email"
+				logRespond(s, i, response)
+				return
+			}
+
+			var b backer
+			err = backerstore.Get(email, &b)
+			if err != nil {
+				response := "No backer found with that email"
+				logRespond(s, i, response)
+				return
+			}
+
+			response := "**Email**: " + email + "\n**Backer Reward Title**: " + b.RewardTitle + "\n**Backer Donation**: " + fmt.Sprintf("%.2f", b.Donation) + "\n**Status**: " + b.Status
+
+			respond(s, i, response)
+		},
+		"get-backer-info": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			linkstore, err := skv.Open("backerlinks.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer linkstore.Close()
+
+			backerstore, err := skv.Open("backers.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backerstore.Close()
+
+			userID := i.ApplicationCommandData().TargetID
 
 			var email string = ""
 			err = linkstore.Get(userID, &email)
@@ -524,7 +570,6 @@ var (
 			}
 
 			// claim rewards
-			log.Println("Claiming donation roles")
 			err = giveBackerRoles(s, i, b.Donation)
 			if err != nil {
 				response := err.Error()
@@ -532,7 +577,7 @@ var (
 				return
 			}
 
-			log.Printf("Claiming backer %s to %s as %s", email, i.Member.User.ID, i.Member.User.Username)
+			log.Printf("Claimied backer %s to %s as %s", email, i.Member.User.ID, i.Member.User.Username)
 			linkstore.Put(i.Interaction.Member.User.ID, email)
 			linkstore.Put(email, i.Member.User.ID)
 			response := "Successfully claimed backer roles"

@@ -13,8 +13,8 @@ The pledge is cleaned up
 €100.00 -> 100.00
 $1,000.00 -> 1000.00
 
-| Email            | Pledge Amount | Pledge Status |
-|------------------|---------------|---------------|
-| email1@gmail.com | €100.0        | collected     |
-| email2@gmail.com | €15.00        | errored       |
-| email3@gmail.com | €50.00        | collected     |
+| Email            | Reward Title   | Pledge Amount | Pledge Status |
+|------------------|----------------|---------------|---------------|
+| email1@gmail.com | Some Reward    | €100.0        | collected     |
+| email2@gmail.com | Another reward | €15.00        | errored       |
+| email3@gmail.com | A cool reward  | €50.00        | collected     |
