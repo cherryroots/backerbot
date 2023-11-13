@@ -27,7 +27,7 @@ func main() {
 		return
 	}
 
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildMembers | discordgo.IntentsDirectMessages
 	dg.ShouldReconnectOnError = true
 
 	dg.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {

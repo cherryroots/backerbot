@@ -21,6 +21,7 @@ var (
 			Name:                     "parse",
 			Description:              "Parse a csv into the database",
 			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionAttachment,
@@ -34,6 +35,7 @@ var (
 			Name:                     "addrole",
 			Description:              "Maps a role to a tier",
 			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionRole,
@@ -53,6 +55,7 @@ var (
 			Name:                     "removerole",
 			Description:              "Removes a role from the database",
 			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -66,11 +69,13 @@ var (
 			Name:                     "listroles",
 			Description:              "Lists all roles",
 			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 		},
 		{
 			Name:                     "get-email",
 			Description:              "Get a backer",
 			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -84,6 +89,7 @@ var (
 			Name:                     "get-userid",
 			Description:              "Get a backer",
 			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionUser,
@@ -97,6 +103,7 @@ var (
 			Name:                     "unlink",
 			Description:              "Unlink a backer from a role and remove roles",
 			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -110,6 +117,7 @@ var (
 			Name:                     "button",
 			Description:              "Create a button to claim rewards",
 			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
