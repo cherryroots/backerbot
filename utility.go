@@ -1,10 +1,10 @@
 package main
 
 import (
+	"backerbot/skv"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/rapidloop/skv"
 )
 
 type role struct {
@@ -64,6 +64,16 @@ func getRoles(guild *discordgo.Guild) ([]role, error) {
 		}
 	}
 	return rolesList, nil
+}
+
+func logRespond(s *discordgo.Session, i *discordgo.InteractionCreate, content string) {
+	log.Print(content)
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: content,
+		},
+	})
 }
 
 func respond(s *discordgo.Session, i *discordgo.InteractionCreate, content string) {

@@ -1,20 +1,20 @@
 package main
 
 import (
+	"backerbot/skv"
 	"encoding/csv"
 	"errors"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/rapidloop/skv"
 )
 
 type backer struct {
-	Email    string
-	Donation float64
-	Status   string
+	Email       string
+	RewardTitle string
+	Donation    float64
+	Status      string
 }
 
 func parse(csvString string) error {
@@ -33,9 +33,10 @@ func parse(csvString string) error {
 
 	for _, record := range records {
 		b := backer{
-			Email:    record[0],
-			Donation: cleanDonation(record[1]),
-			Status:   record[2],
+			Email:       strings.ToLower(record[0]),
+			RewardTitle: record[1],
+			Donation:    cleanDonation(record[2]),
+			Status:      record[3],
 		}
 
 		err := store.Put(b.Email, b)

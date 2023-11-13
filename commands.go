@@ -1,14 +1,15 @@
 package main
 
 import (
+	"backerbot/skv"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/rapidloop/skv"
 )
 
 var (
@@ -157,6 +158,12 @@ var (
 			DefaultMemberPermissions: &writePermission,
 			DMPermission:             &dmPermission,
 		},
+		{
+			Name:                     "fix-emails",
+			Description:              "Fix email",
+			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
+		},
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -192,8 +199,7 @@ var (
 			err = parse(string(body))
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			log.Print("Done")
@@ -206,8 +212,7 @@ var (
 			rolestore, err := skv.Open("roles.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer rolestore.Close()
@@ -224,8 +229,7 @@ var (
 			err = rolestore.Put(newrole.RoleID, newrole)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
@@ -239,8 +243,7 @@ var (
 			rolestore, err := skv.Open("roles.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer rolestore.Close()
@@ -249,8 +252,7 @@ var (
 			err = rolestore.Delete(roleID)
 			if err != nil {
 				response := "There's no role with that id"
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			log.Print("Done")
@@ -264,16 +266,14 @@ var (
 			guild, err := s.Guild(i.GuildID)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
 			roles, err := getRoles(guild)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			var response string
@@ -292,16 +292,14 @@ var (
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer backerstore.Close()
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer linkstore.Close()
@@ -311,8 +309,7 @@ var (
 			err = backerstore.Get(email, &b)
 			if err != nil {
 				response := "No backer found with that email"
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			var userID string = "No link found"
@@ -322,14 +319,13 @@ var (
 				member, err := s.GuildMember(i.GuildID, userID)
 				if err != nil {
 					response := err.Error()
-					respond(s, i, response)
-					log.Print(response)
+					logRespond(s, i, response)
 					return
 				}
 				username = member.User.Username
 			}
 
-			response := "**Email**: " + email + "\n**Backer Donation**: " + fmt.Sprintf("%.2f", b.Donation) + "\n**Status**: " + b.Status + "\n**User id**: " + userID + "\n**Username**: " + username
+			response := "**Email**: " + email + "\n**Backer Reward Title**: " + b.RewardTitle + "\n**Backer Donation**: " + fmt.Sprintf("%.2f", b.Donation) + "\n**Status**: " + b.Status + "\n**User id**: " + userID + "\n**Username**: " + username
 			respond(s, i, response)
 
 		},
@@ -338,11 +334,18 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer linkstore.Close()
+
+			backerstore, err := skv.Open("backers.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backerstore.Close()
 
 			userID := i.ApplicationCommandData().Options[0].Value.(string)
 
@@ -350,12 +353,19 @@ var (
 			err = linkstore.Get(userID, &email)
 			if err != nil {
 				response := "This user hasn't linked to an email"
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
-			response := "**Email**: " + email
+			var b backer
+			err = backerstore.Get(email, &b)
+			if err != nil {
+				response := "No backer found with that email"
+				logRespond(s, i, response)
+				return
+			}
+
+			response := "**Email**: " + email + "\n**Backer Reward Title**: " + b.RewardTitle + "\n**Backer Donation**: " + fmt.Sprintf("%.2f", b.Donation) + "\n**Status**: " + b.Status
 
 			respond(s, i, response)
 		},
@@ -364,8 +374,7 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer linkstore.Close()
@@ -376,24 +385,21 @@ var (
 			err = linkstore.Get(email, &userID)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
 			err = linkstore.Delete(email)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
 			err = linkstore.Delete(userID)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
@@ -401,16 +407,14 @@ var (
 			guild, err := s.Guild(i.GuildID)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
 			roles, err := getRoles(guild)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
@@ -418,8 +422,7 @@ var (
 				err = s.GuildMemberRoleRemove(i.GuildID, userID, role.RoleID)
 				if err != nil {
 					response := err.Error()
-					respond(s, i, response)
-					log.Print(response)
+					logRespond(s, i, response)
 					return
 				}
 			}
@@ -467,8 +470,7 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer linkstore.Close()
@@ -476,13 +478,13 @@ var (
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer backerstore.Close()
 
 			email := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
+			email = strings.ToLower(email)
 
 			// Check if email exists and get backer
 			var b backer
@@ -494,8 +496,7 @@ var (
 			}
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
@@ -527,8 +528,7 @@ var (
 			err = giveBackerRoles(s, i, b.Donation)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
@@ -538,13 +538,82 @@ var (
 			response := "Successfully claimed backer roles"
 			respond(s, i, response)
 		},
+		"fix-emails": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			// iterate over all backers in the linkstore and lowercase the email
+			linkstore, err := skv.Open("backerlinks.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer linkstore.Close()
+
+			backerstore, err := skv.Open("backers.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backerstore.Close()
+
+			keys, err := linkstore.GetKeys()
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+
+			// email regex
+			reEmail := regexp.MustCompile(`[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}`)
+			// only numbers regex
+			reNum := regexp.MustCompile(`[0-9]+`)
+
+			log.Printf("Found %d backers", len(keys))
+
+			for count, key := range keys {
+				log.Printf("Processing %d of %d", count+1, len(keys))
+				// check if email or number
+				if reEmail.MatchString(key) {
+					// if the key is an email get the user
+					var userID string
+					err = linkstore.Get(key, &userID)
+					if err != nil {
+						response := err.Error()
+						logRespond(s, i, response)
+						return
+					}
+					email := strings.ToLower(key)
+					linkstore.Delete(key)
+					linkstore.Put(email, userID)
+
+				} else if reNum.MatchString(key) {
+					// if the key is a number get the email linked to it
+					var email string
+					err = linkstore.Get(key, &email)
+					if err != nil {
+						response := err.Error()
+						logRespond(s, i, response)
+						return
+					}
+					lowerEmail := strings.ToLower(email)
+					linkstore.Delete(key)
+					linkstore.Put(key, lowerEmail)
+
+				} else {
+					continue
+				}
+			}
+
+			response := "Successfully fixed emails"
+			respond(s, i, response)
+
+		},
 		"reclaim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Member.User.Username)
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer backerstore.Close()
@@ -552,8 +621,7 @@ var (
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			defer linkstore.Close()
@@ -563,8 +631,7 @@ var (
 			err = linkstore.Get(i.Interaction.Member.User.ID, &email)
 			if err != nil {
 				response := "You haven't claimed your rewards yet"
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 
@@ -573,16 +640,14 @@ var (
 			err = backerstore.Get(email, &b)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			log.Println("Claiming donation roles")
 			err = giveBackerRoles(s, i, b.Donation)
 			if err != nil {
 				response := err.Error()
-				respond(s, i, response)
-				log.Print(response)
+				logRespond(s, i, response)
 				return
 			}
 			log.Printf("Reclaimed rewards for %s", i.Member.User.Username)
