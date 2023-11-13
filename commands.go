@@ -118,6 +118,12 @@ var (
 					Description: "The email of the backer",
 					Required:    true,
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "userid",
+					Description: "the user to remove",
+					Required:    true,
+				},
 			},
 		},
 		{
@@ -174,7 +180,7 @@ var (
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"parse": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 
 			attachmentID := i.ApplicationCommandData().Options[0].Value.(string)
 			attachment := i.ApplicationCommandData().Resolved.Attachments[attachmentID]
@@ -214,7 +220,7 @@ var (
 			respond(s, i, response)
 		},
 		"addrole": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 			rolestore, err := skv.Open("roles.db")
 			if err != nil {
 				response := err.Error()
@@ -245,7 +251,7 @@ var (
 
 		},
 		"removerole": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 			rolestore, err := skv.Open("roles.db")
 			if err != nil {
 				response := err.Error()
@@ -267,7 +273,7 @@ var (
 
 		},
 		"listroles": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 
 			guild, err := s.Guild(i.GuildID)
 			if err != nil {
@@ -294,7 +300,7 @@ var (
 
 		},
 		"get-email": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 			backerstore, err := skv.Open("backers.db")
 			if err != nil {
 				response := err.Error()
@@ -336,7 +342,7 @@ var (
 
 		},
 		"get-user": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
@@ -376,7 +382,7 @@ var (
 			respond(s, i, response)
 		},
 		"get-backer-info": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
@@ -416,7 +422,8 @@ var (
 			respond(s, i, response)
 		},
 		"unlink": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
+
 			linkstore, err := skv.Open("backerlinks.db")
 			if err != nil {
 				response := err.Error()
@@ -426,28 +433,10 @@ var (
 			defer linkstore.Close()
 
 			email := i.ApplicationCommandData().Options[0].Value.(string)
+			userID := i.ApplicationCommandData().Options[1].Value.(string)
 
-			var userID string = ""
-			err = linkstore.Get(email, &userID)
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
-
-			err = linkstore.Delete(email)
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
-
-			err = linkstore.Delete(userID)
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
+			linkstore.Delete(email)
+			linkstore.Delete(userID)
 
 			// get roles and delete them from the unlinked user
 			guild, err := s.Guild(i.GuildID)
@@ -477,7 +466,7 @@ var (
 			respond(s, i, response)
 		},
 		"button": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 			var title, description, buttontext, emijiid string = "", "", "", ""
 			for _, option := range i.ApplicationCommandData().Options {
 				switch option.Name {
@@ -502,12 +491,52 @@ var (
 			sendClaimButton(s, i, title, description, buttontext, emijiid)
 		},
 		"claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.ApplicationCommandData().Name)
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 			// Open modal and which will run "modal_claim" afterwards
 			sendModal(s, i)
 		},
 		"button_claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s", i.MessageComponentData().CustomID)
+			log.Printf("Received interaction: %s by %s", i.MessageComponentData().CustomID, i.Interaction.Member.User.Username)
+			backerstore, err := skv.Open("backers.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backerstore.Close()
+
+			linkstore, err := skv.Open("backerlinks.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer linkstore.Close()
+
+			// Check if the user has claimed before
+			var email string
+			err = linkstore.Get(i.Interaction.Member.User.ID, &email)
+			if err == nil {
+				// Reclaim rewards
+				var b backer
+				err = backerstore.Get(email, &b)
+				if err != nil {
+					response := err.Error()
+					logRespond(s, i, response)
+					return
+				}
+				err = giveBackerRoles(s, i, b.Donation)
+				if err != nil {
+					response := err.Error()
+					logRespond(s, i, response)
+					return
+				}
+				log.Printf("Reclaimed rewards for %s", i.Member.User.Username)
+				response := "Successfully reclaimed rewards"
+				respond(s, i, response)
+				return
+			}
+
 			// Open modal and which will run "modal_claim" afterwards
 			sendModal(s, i)
 		},
