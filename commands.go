@@ -480,7 +480,7 @@ var (
 			var b backer
 			err = backerstore.Get(email, &b)
 			if err == skv.ErrNotFound {
-				response := "Email does not exist"
+				response := "Email does not exist, please check that you wrote it correctly."
 				respond(s, i, response)
 				return
 			}
@@ -492,7 +492,7 @@ var (
 			}
 
 			if b.Status != "collected" {
-				response := "Your kickstarter payment has not been received yet"
+				response := "Your kickstarter pledge has not been received yet, please message Raffle.\n\nThank you!"
 				respond(s, i, response)
 				return
 			}
@@ -500,7 +500,7 @@ var (
 			// Check if the email has already been claimed
 			err = linkstore.Get(email, nil)
 			if err == nil {
-				response := "Rewards have already been claimed for this email"
+				response := "Rewards have already been claimed for this email. If it wasn't you please message Raffle.\n\nThank you!"
 				respond(s, i, response)
 				return
 			}

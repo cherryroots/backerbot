@@ -30,11 +30,16 @@ func main() {
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
 	dg.ShouldReconnectOnError = true
 
+	dg.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
+	})
+
 	err = dg.Open()
 	if err != nil {
 		log.Panic("error opening connection,", err)
 		return
 	}
+	defer dg.Close()
 
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
@@ -87,6 +92,5 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
-	defer dg.Close()
 	defer log.Print("Bot is shutting down.")
 }
