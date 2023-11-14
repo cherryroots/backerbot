@@ -33,6 +33,12 @@ var (
 			},
 		},
 		{
+			Name:                     "stats",
+			Description:              "Get the stats of the backers",
+			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
+		},
+		{
 			Name:                     "addrole",
 			Description:              "Maps a role to a tier",
 			DefaultMemberPermissions: &adminCommandPermission,
@@ -217,6 +223,62 @@ var (
 			log.Print("Done")
 
 			response := "Done"
+			respond(s, i, response)
+		},
+		"stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
+
+			backerstore, err := skv.Open("backers.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backerstore.Close()
+
+			linkstore, err := skv.Open("backerlinks.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer linkstore.Close()
+
+			backers, err := backerstore.GetKeys()
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+
+			links, err := linkstore.GetKeys()
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+
+			totalCollectedDonationsAmount := 0
+			totalCollectedDonations := 0
+			totalErroredDonationsAmount := 0
+			totalErroredDonations := 0
+			for _, b := range backers {
+				var backer backer
+				err := backerstore.Get(b, &backer)
+				if err == nil {
+					if backer.Status == "collected" {
+						totalCollectedDonations += 1
+						totalCollectedDonationsAmount += int(backer.Donation)
+					} else {
+						totalErroredDonations += 1
+						totalErroredDonationsAmount += int(backer.Donation)
+					}
+				}
+			}
+
+			response := fmt.Sprintf("Total backers: %d\nLinked backers: %d\n", len(backers), len(links))
+			response += fmt.Sprintf("Collected donations: %d -> %d\nErrored donations: %d -> %d\n", totalCollectedDonations, totalCollectedDonationsAmount, totalErroredDonations, totalErroredDonationsAmount)
+
 			respond(s, i, response)
 		},
 		"addrole": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
