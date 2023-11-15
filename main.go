@@ -48,12 +48,12 @@ func main() {
 				go h(s, i)
 			}
 		case discordgo.InteractionModalSubmit:
-			prefix := strings.Split(i.ModalSubmitData().CustomID, "-")
-			if h, ok := commandHandlers[prefix[0]]; ok {
+			modalCommand := strings.Split(i.ModalSubmitData().CustomID, "-")
+			if h, ok := modalHandlers[modalCommand[0]]; ok {
 				go h(s, i)
 			}
 		case discordgo.InteractionMessageComponent:
-			if h, ok := commandHandlers[i.MessageComponentData().CustomID]; ok {
+			if h, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
 				go h(s, i)
 			}
 		}

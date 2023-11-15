@@ -86,7 +86,7 @@ func respond(s *discordgo.Session, i *discordgo.InteractionCreate, content strin
 	})
 }
 
-func sendModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func sendClaimModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseModal,
 		Data: &discordgo.InteractionResponseData{
@@ -102,6 +102,34 @@ func sendModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 							Placeholder: "Please provide the same email used in your kickstarter account...",
 							Required:    true,
 							MaxLength:   100,
+							MinLength:   5,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Print(err)
+	}
+}
+
+func sendNoteModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseModal,
+		Data: &discordgo.InteractionResponseData{
+			CustomID: "modal_note-" + i.ApplicationCommandData().TargetID,
+			Title:    "Note!",
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.TextInput{
+							CustomID:    "note",
+							Label:       "Note",
+							Style:       discordgo.TextInputParagraph,
+							Placeholder: "Please provide a note...",
+							Required:    true,
+							MaxLength:   1000,
 							MinLength:   5,
 						},
 					},

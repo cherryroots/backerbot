@@ -113,6 +113,12 @@ var (
 			DMPermission:             &dmPermission,
 		},
 		{
+			Name:                     "set-backer-note",
+			Type:                     discordgo.UserApplicationCommand,
+			DefaultMemberPermissions: &adminCommandPermission,
+			DMPermission:             &dmPermission,
+		},
+		{
 			Name:                     "unlink",
 			Description:              "Unlink a backer from a role and remove roles",
 			DefaultMemberPermissions: &adminCommandPermission,
@@ -461,12 +467,27 @@ var (
 			}
 			defer backerstore.Close()
 
+			backernotes, err := skv.Open("backernotes.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backernotes.Close()
+
 			userID := i.ApplicationCommandData().TargetID
+
+			var note string = ""
+			var noteString string = ""
+			err = backernotes.Get(userID, &note)
+			if err == nil {
+				noteString = "**Note**: " + note
+			}
 
 			var email string = ""
 			err = linkstore.Get(userID, &email)
 			if err != nil {
-				response := "This user hasn't linked to an email"
+				response := "This user hasn't linked to a kickstarter email\n" + noteString
 				logRespond(s, i, response)
 				return
 			}
@@ -474,14 +495,18 @@ var (
 			var b backer
 			err = backerstore.Get(email, &b)
 			if err != nil {
-				response := "No backer found with that email"
+				response := "No backer found with that email\n" + noteString
 				logRespond(s, i, response)
 				return
 			}
 
-			response := "**Email**: " + email + "\n**Backer Reward Title**: " + b.RewardTitle + "\n**Backer Donation**: " + fmt.Sprintf("%.2f", b.Donation) + "\n**Status**: " + b.Status
+			response := "**Email**: " + email + "\n**Backer Reward Title**: " + b.RewardTitle + "\n**Backer Donation**: " + fmt.Sprintf("%.2f", b.Donation) + "\n**Status**: " + b.Status + "\n**Note**: " + note
 
 			respond(s, i, response)
+		},
+		"set-backer-note": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
+			sendNoteModal(s, i)
 		},
 		"unlink": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
@@ -555,124 +580,7 @@ var (
 		"claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.Printf("Received interaction: %s by %s", i.ApplicationCommandData().Name, i.Interaction.Member.User.Username)
 			// Open modal and which will run "modal_claim" afterwards
-			sendModal(s, i)
-		},
-		"button_claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s by %s", i.MessageComponentData().CustomID, i.Interaction.Member.User.Username)
-			backerstore, err := skv.Open("backers.db")
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
-			defer backerstore.Close()
-
-			linkstore, err := skv.Open("backerlinks.db")
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
-			defer linkstore.Close()
-
-			// Check if the user has claimed before
-			var email string
-			err = linkstore.Get(i.Interaction.Member.User.ID, &email)
-			if err == nil {
-				// Reclaim rewards
-				var b backer
-				err = backerstore.Get(email, &b)
-				if err != nil {
-					response := err.Error()
-					logRespond(s, i, response)
-					return
-				}
-				err = giveBackerRoles(s, i, b.Donation)
-				if err != nil {
-					response := err.Error()
-					logRespond(s, i, response)
-					return
-				}
-				log.Printf("Reclaimed rewards for %s", i.Member.User.Username)
-				response := "Successfully reclaimed rewards"
-				respond(s, i, response)
-				return
-			}
-
-			// Open modal and which will run "modal_claim" afterwards
-			sendModal(s, i)
-		},
-		"modal_claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			log.Printf("Received interaction: %s by %s", i.ModalSubmitData().CustomID, i.Member.User.Username)
-			linkstore, err := skv.Open("backerlinks.db")
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
-			defer linkstore.Close()
-
-			backerstore, err := skv.Open("backers.db")
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
-			defer backerstore.Close()
-
-			email := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
-			email = strings.ToLower(email)
-
-			// Check if email exists and get backer
-			var b backer
-			err = backerstore.Get(email, &b)
-			if err == skv.ErrNotFound {
-				response := "Email does not exist, please check that you wrote it correctly."
-				respond(s, i, response)
-				return
-			}
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
-
-			if b.Status != "collected" {
-				response := "Your kickstarter pledge has not been received yet, please message Raffle.\n\nThank you!"
-				respond(s, i, response)
-				return
-			}
-
-			// Check if the email has already been claimed
-			err = linkstore.Get(email, nil)
-			if err == nil {
-				response := "Rewards have already been claimed for this email. If it wasn't you please message Raffle.\n\nThank you!"
-				respond(s, i, response)
-				return
-			}
-
-			// Check if the user has already claimed
-			var linkemail string
-			err = linkstore.Get(i.Member.User.ID, &linkemail)
-			if err == nil {
-				response := "You have already claimed your rewards with " + linkemail
-				respond(s, i, response)
-				return
-			}
-
-			// claim rewards
-			err = giveBackerRoles(s, i, b.Donation)
-			if err != nil {
-				response := err.Error()
-				logRespond(s, i, response)
-				return
-			}
-
-			log.Printf("Claimied backer %s to %s as %s", email, i.Member.User.ID, i.Member.User.Username)
-			linkstore.Put(i.Interaction.Member.User.ID, email)
-			linkstore.Put(email, i.Member.User.ID)
-			response := "Successfully claimed backer roles"
-			respond(s, i, response)
+			sendClaimModal(s, i)
 		},
 		"fix-emails": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			// iterate over all backers in the linkstore and lowercase the email
@@ -788,6 +696,147 @@ var (
 			}
 			log.Printf("Reclaimed rewards for %s", i.Member.User.Username)
 			response := "Successfully reclaimed rewards"
+			respond(s, i, response)
+		},
+	}
+
+	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"button_claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s by %s", i.MessageComponentData().CustomID, i.Interaction.Member.User.Username)
+			backerstore, err := skv.Open("backers.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backerstore.Close()
+
+			linkstore, err := skv.Open("backerlinks.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer linkstore.Close()
+
+			// Check if the user has claimed before
+			var email string
+			err = linkstore.Get(i.Interaction.Member.User.ID, &email)
+			if err == nil {
+				// Reclaim rewards
+				var b backer
+				err = backerstore.Get(email, &b)
+				if err != nil {
+					response := err.Error()
+					logRespond(s, i, response)
+					return
+				}
+				err = giveBackerRoles(s, i, b.Donation)
+				if err != nil {
+					response := err.Error()
+					logRespond(s, i, response)
+					return
+				}
+				log.Printf("Reclaimed rewards for %s", i.Member.User.Username)
+				response := "Successfully reclaimed rewards"
+				respond(s, i, response)
+				return
+			}
+
+			// Open modal and which will run "modal_claim" afterwards
+			sendClaimModal(s, i)
+		},
+	}
+
+	modalHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"modal_note": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s by %s", i.ModalSubmitData().CustomID, i.Member.User.Username)
+
+			backernotes, err := skv.Open("backernotes.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backernotes.Close()
+
+			newNote := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
+			userID := strings.Split(i.ModalSubmitData().CustomID, "-")[1]
+
+			backernotes.Put(userID, newNote)
+
+			respond(s, i, "Note added!")
+		},
+		"modal_claim": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			log.Printf("Received interaction: %s by %s", i.ModalSubmitData().CustomID, i.Member.User.Username)
+			linkstore, err := skv.Open("backerlinks.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer linkstore.Close()
+
+			backerstore, err := skv.Open("backers.db")
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+			defer backerstore.Close()
+
+			email := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
+			email = strings.ToLower(email)
+
+			// Check if email exists and get backer
+			var b backer
+			err = backerstore.Get(email, &b)
+			if err == skv.ErrNotFound {
+				response := "Email does not exist, please check that you wrote it correctly."
+				respond(s, i, response)
+				return
+			}
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+
+			if b.Status != "collected" {
+				response := "Your kickstarter pledge has not been received yet, please message Raffle.\n\nThank you!"
+				respond(s, i, response)
+				return
+			}
+
+			// Check if the email has already been claimed
+			err = linkstore.Get(email, nil)
+			if err == nil {
+				response := "Rewards have already been claimed for this email. If it wasn't you please message Raffle.\n\nThank you!"
+				respond(s, i, response)
+				return
+			}
+
+			// Check if the user has already claimed
+			var linkemail string
+			err = linkstore.Get(i.Member.User.ID, &linkemail)
+			if err == nil {
+				response := "You have already claimed your rewards with " + linkemail
+				respond(s, i, response)
+				return
+			}
+
+			// claim rewards
+			err = giveBackerRoles(s, i, b.Donation)
+			if err != nil {
+				response := err.Error()
+				logRespond(s, i, response)
+				return
+			}
+
+			log.Printf("Claimied backer %s to %s as %s", email, i.Member.User.ID, i.Member.User.Username)
+			linkstore.Put(i.Interaction.Member.User.ID, email)
+			linkstore.Put(email, i.Member.User.ID)
+			response := "Successfully claimed backer roles"
 			respond(s, i, response)
 		},
 	}
